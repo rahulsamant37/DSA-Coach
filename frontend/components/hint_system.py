@@ -251,10 +251,7 @@ class HintSystemComponent:
         with st.spinner("🤔 Analyzing your code and generating hint..."):
             try:
                 response = self.api_client.get_progressive_hint(
-                    problem_id=st.session_state.current_problem.get('id'),
                     user_code=st.session_state.user_code,
-                    hint_type=hint_type,
-                    current_level=st.session_state.hint_level,
                     user_id=st.session_state.get('user_id', 'anonymous')
                 )
                 

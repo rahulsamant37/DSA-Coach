@@ -5,6 +5,8 @@ from frontend.components.problem_generator import ProblemGeneratorComponent
 from frontend.components.hint_system import HintSystemComponent
 from frontend.components.code_reviewer import CodeReviewerComponent
 from frontend.components.progress_tracker import ProgressTrackerComponent
+from frontend.components.interview_simulator import InterviewSimulatorComponent
+from frontend.components.code_debugger import CodeDebuggerComponent
 from shared.config import DEFAULT_USER_ID, setup_logging
 from shared.models import UserProfile, SkillLevel, TargetGoal
 
@@ -56,15 +58,14 @@ def render_sidebar():
     """Render sidebar with navigation and settings"""
     with st.sidebar:
         st.markdown("### 🚀 Navigation")
-        
-        # Feature selection
+          # Feature selection
         feature_options = {
             "🎯 Problem Generator": "Create practice problems",
             "💡 Hint System": "Get progressive hints",
             "📝 Code Review": "Analyze and improve code",
             "📊 Progress Tracker": "Track learning journey",
-            "🎤 Interview Simulator": "Practice mock interviews (Coming Soon)",
-            "🐛 Code Debugger": "Debug problematic code (Coming Soon)",
+            "🎤 Interview Simulator": "Practice mock interviews",
+            "🐛 Code Debugger": "Debug problematic code",
             "🏛️ Memory Palace": "Create memory aids (Coming Soon)"
         }
         
@@ -257,8 +258,7 @@ def main():
     if st.session_state.get('quick_nav'):
         page = st.session_state.quick_nav
         st.session_state.quick_nav = None
-    
-    # Main content area
+      # Main content area
     try:
         if page == "🎯 Problem Generator":
             problem_generator = ProblemGeneratorComponent(api_client)
@@ -275,6 +275,14 @@ def main():
         elif page == "📊 Progress Tracker":
             progress_tracker = ProgressTrackerComponent(api_client)
             progress_tracker.render()
+        
+        elif page == "🎤 Interview Simulator":
+            interview_simulator = InterviewSimulatorComponent(api_client)
+            interview_simulator.render()
+        
+        elif page == "🐛 Code Debugger":
+            code_debugger = CodeDebuggerComponent(api_client)
+            code_debugger.render()
         
         else:
             st.info(f"🚧 {page.split(' ', 1)[1]} is coming soon! Please try other features.")

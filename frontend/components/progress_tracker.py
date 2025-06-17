@@ -52,21 +52,6 @@ class ProgressTrackerComponent:
         with col2:
             if st.button("💡 Get Hints", use_container_width=True):
                 st.info("Go to Hint System page to get help")
-        
-        # Show sample dashboard
-        st.markdown("### 📋 Sample Dashboard")
-        with st.expander("Preview of your future dashboard", expanded=True):
-            # Sample metrics
-            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-            
-            with col_s1:
-                st.metric("Problems Solved", "42", "+3")
-            with col_s2:
-                st.metric("Average Score", "85%", "+5%")
-            with col_s3:
-                st.metric("Current Streak", "7 days", "+1")
-            with col_s4:
-                st.metric("Skills Mastered", "12", "+2")
     
     def _display_overview_metrics(self, progress_data: Dict[str, Any]):
         """Display overview metrics"""

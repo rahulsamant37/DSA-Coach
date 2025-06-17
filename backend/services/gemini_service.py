@@ -20,7 +20,20 @@ class GeminiService:
         """Initialize the Gemini client"""
         try:
             if not self.api_key:
-                self.logger.warning("Gemini API key not configured")
+                self.logger.warning("Gemini API key not configured - features requiring AI will not work")
+                return
+            
+            # Load the API key from environment if needed
+            import os
+            from dotenv import load_dotenv
+            load_dotenv()
+            
+            # Re-check API key after loading .env
+            if not self.api_key:
+                self.api_key = os.getenv('GOOGLE_API_KEY', '')
+            
+            if not self.api_key:
+                self.logger.error("GOOGLE_API_KEY not found in environment variables")
                 return
             
             genai.configure(api_key=self.api_key)
@@ -45,7 +58,7 @@ class GeminiService:
                 safety_settings=safety_settings
             )
             
-            self.logger.info(f"Gemini client initialized with model: {self.model_name}")
+            self.logger.info(f"Gemini client initialized successfully with model: {self.model_name}")
             
         except Exception as e:
             self.logger.error(f"Failed to initialize Gemini client: {str(e)}")

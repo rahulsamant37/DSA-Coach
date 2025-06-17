@@ -189,9 +189,6 @@ class CodeReviewerComponent:
                     code=code,
                     language=language,
                     focus_areas=focus_areas,
-                    review_depth=review_depth,
-                    include_suggestions=include_suggestions,
-                    problem_context=problem_context,
                     user_id=st.session_state.get('user_id', 'anonymous')
                 )
                 

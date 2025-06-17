@@ -84,11 +84,11 @@ class ProblemGeneratorComponent:
         with st.spinner("🤖 Generating your personalized DSA problem..."):
             try:
                 response = self.api_client.generate_problem(
+                    user_id=st.session_state.get('user_id', 'anonymous'),
                     difficulty=difficulty,
                     topics=topics,
                     patterns=patterns,
-                    companies=companies,
-                    user_id=st.session_state.get('user_id', 'anonymous')
+                    companies=companies
                 )
                 
                 if response:

@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional, List
 from shared.config import API_URL
 from shared.models import (
     UserProfile, ProblemGenerationRequest, HintRequest, 
-    CodeReviewRequest, APIResponse, DifficultyLevel
+    CodeReviewRequest, APIResponse
 )
 
 import os
@@ -79,55 +79,20 @@ class APIClient:
         )
         
         return result is not None and result.get("success", False)
-      # Problem Generation
-    def generate_problem(self, user_id: str = "anonymous", request: ProblemGenerationRequest = None, 
-                        difficulty: str = "Medium", topics: List[str] = None, 
-                        patterns: List[str] = None, companies: List[str] = None) -> Optional[Dict[str, Any]]:
-        """Generate problem variations or single problem"""
-        try:
-            if request:
-                # Use the proper generate endpoint with request object
-                result = self._make_request(
-                    "POST",
-                    "/api/problems/generate",
-                    json=request.model_dump(),
-                    params={"user_id": user_id}
-                )
-                
-                if result and result.get("success") and result.get("data"):
-                    return result["data"].get("problems", [])
-            else:
-                # Generate a single problem based on criteria
-                result = self.get_random_problem()
-                
-                if result:
-                    # Add the requested metadata
-                    result['difficulty'] = difficulty
-                    result['topics'] = topics or []
-                    result['patterns'] = patterns or []
-                    result['companies'] = companies or []
-                    
-                    # Generate a more detailed problem structure
-                    if not result.get('examples'):
-                        result['examples'] = [
-                            {
-                                "input": "Example input",
-                                "output": "Example output",
-                                "explanation": "Explanation of the example"
-                            }
-                        ]
-                    
-                    if not result.get('constraints'):
-                        result['constraints'] = ["1 <= n <= 10^5", "Time limit: 1 second"]
-                    
-                    result['id'] = f"problem_{user_id}_{difficulty.lower()}"
-                    
-                    return result
-                    
-            return None
-        except Exception as e:
-            logger.error(f"Error generating problem: {str(e)}")
-            return None
+    
+    # Problem Generation
+    def generate_problem(self, user_id: str, request: ProblemGenerationRequest) -> Optional[List[Dict[str, Any]]]:
+        """Generate problem variations"""
+        result = self._make_request(
+            "POST",
+            "/api/problems/generate",
+            json=request.model_dump(),
+            params={"user_id": user_id}
+        )
+        
+        if result and result.get("success") and result.get("data"):
+            return result["data"].get("problems", [])
+        return None
     
     def get_random_problem(self) -> Optional[Dict[str, Any]]:
         """Get a random practice problem"""
@@ -153,7 +118,8 @@ class APIClient:
     def get_next_hint(self, user_id: str, request: HintRequest) -> Optional[Dict[str, Any]]:
         """Get next level hint"""
         result = self._make_request(
-            "POST",            "/api/hints/next",
+            "POST",
+            "/api/hints/next",
             json=request.model_dump(),
             params={"user_id": user_id}
         )
@@ -161,20 +127,6 @@ class APIClient:
         if result and result.get("success") and result.get("data"):
             return result["data"]
         return None
-    
-    def get_progressive_hint(self, user_code: str = "", user_id: str = "anonymous") -> Optional[Dict[str, Any]]:
-        """Get a progressive hint for the current problem"""
-        try:
-            hint_request = HintRequest(
-                user_approach=user_code,
-                current_hint_level=1,
-                specific_question=""
-            )
-            
-            return self.get_next_hint(user_id, hint_request)
-        except Exception as e:
-            logger.error(f"Error getting progressive hint: {str(e)}")
-            return None
     
     def get_personalized_hint(self, user_id: str, user_approach: str) -> Optional[Dict[str, Any]]:
         """Get personalized hint based on user approach"""
@@ -188,10 +140,14 @@ class APIClient:
             return result["data"]
         return None
       # Code Review
-    def review_code(self, code: str, language: str, focus_areas: List[str] = None, 
-                   user_id: str = "anonymous") -> Optional[Dict[str, Any]]:
+    def review_code(self, code: str, language: str, problem_context: str = "", 
+                   focus_areas: List[str] = None, review_depth: str = "detailed",
+                   include_suggestions: bool = True, user_id: str = "anonymous") -> Optional[Dict[str, Any]]:
         """Review submitted code with flexible parameters"""
         try:
+            from shared.models import CodeReviewRequest
+            
+            # Create a CodeReviewRequest object
             request = CodeReviewRequest(
                 code=code,
                 language=language,
@@ -242,13 +198,67 @@ class APIClient:
             return result["data"]
         return None
     
-    # Problem Variations
+    # Additional methods for frontend components
+    def generate_problem(self, difficulty: str = "Medium", topics: List[str] = None, 
+                        patterns: List[str] = None, companies: List[str] = None, 
+                        user_id: str = "anonymous") -> Optional[Dict[str, Any]]:
+        """Generate a single problem based on criteria"""
+        try:
+            # Use the random problem endpoint as a starting point
+            result = self.get_random_problem()
+            
+            if result:
+                # Add the requested metadata
+                result['difficulty'] = difficulty
+                result['topics'] = topics or []
+                result['patterns'] = patterns or []
+                result['companies'] = companies or []
+                
+                # Generate a more detailed problem structure
+                if not result.get('examples'):
+                    result['examples'] = [
+                        {
+                            "input": "Example input",
+                            "output": "Example output",
+                            "explanation": "Explanation of the example"
+                        }
+                    ]
+                
+                if not result.get('constraints'):
+                    result['constraints'] = ["1 <= n <= 10^5", "Time limit: 1 second"]
+                
+                result['id'] = f"problem_{user_id}_{difficulty.lower()}"
+                
+            return result
+        except Exception as e:
+            logger.error(f"Error generating problem: {str(e)}")
+            return None
+      def get_progressive_hint(self, problem_id: str = None, user_code: str = "", 
+                           user_id: str = "anonymous") -> Optional[Dict[str, Any]]:
+        """Get a progressive hint for the current problem"""
+        try:
+            # Create a hint request
+            from shared.models import HintRequest
+            
+            hint_request = HintRequest(
+                user_approach=user_code,
+                current_hint_level=1,
+                specific_question=""
+            )
+            
+            return self.get_next_hint(user_id, hint_request)
+        except Exception as e:
+            logger.error(f"Error getting progressive hint: {str(e)}")
+            return None
+    
     def generate_problem_variations(self, problem_id: str = None, user_id: str = "anonymous", 
                                   problem_text: str = "", num_variations: int = 3, 
                                   difficulty_level: str = "Medium", context_options: List[str] = None,
                                   focus_areas: List[str] = None, include_hints: bool = True) -> Optional[Dict[str, Any]]:
         """Generate problem variations - supports both old and new interface"""
         try:
+            from shared.models import ProblemGenerationRequest, DifficultyLevel
+            
             # Convert string difficulty to enum
             difficulty_map = {
                 "Easy": DifficultyLevel.EASY,
@@ -295,7 +305,6 @@ class APIClient:
             logger.error(f"Error generating problem variations: {str(e)}")
             return None
     
-    # Additional helper methods
     def add_to_favorites(self, user_id: str, problem: Dict[str, Any]) -> bool:
         """Add problem to favorites"""
         result = self._make_request(
@@ -305,6 +314,17 @@ class APIClient:
         )
         
         return result is not None and result.get("success", False)
+    
+    def get_progressive_hint(self, user_id: str, hint_request: HintRequest) -> Optional[Dict[str, Any]]:
+        """Get progressive hint"""
+        result = self._make_request(
+            "POST",
+            "/api/hints/progressive",
+            json=hint_request.model_dump(),
+            params={"user_id": user_id}
+        )
+        
+        return result
     
     def verify_solution(self, user_id: str, problem_statement: str, user_code: str, difficulty: str) -> Optional[Dict[str, Any]]:
         """Verify user solution"""
@@ -368,6 +388,23 @@ class APIClient:
         )
         
         return result is not None and result.get("success", False)
+    
+    def review_code(self, user_id: str, code: str, language: str, focus_areas: List[str]) -> Optional[Dict[str, Any]]:
+        """Review code"""
+        data = {
+            "code": code,
+            "language": language,
+            "focus_areas": focus_areas
+        }
+        
+        result = self._make_request(
+            "POST",
+            "/api/code/review",
+            json=data,
+            params={"user_id": user_id}
+        )
+        
+        return result
     
     def save_code_review(self, user_id: str, review_data: Dict[str, Any]) -> bool:
         """Save code review"""
